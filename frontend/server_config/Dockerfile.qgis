@@ -1,0 +1,6 @@
+# Use the official QGIS Server image
+FROM qgis/qgis-server:latest
+
+# Copy the QGIS project file and all data files from the build context into the image
+# This path inside the container is a standard location for QGIS projects.
+COPY ./data/ /etc/qgis/

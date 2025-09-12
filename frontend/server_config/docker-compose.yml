@@ -1,0 +1,28 @@
+version: '3.8'
+services:
+  qgis-server:
+    build:
+      context: .
+      dockerfile: Dockerfile.qgis
+    environment:
+      - QGIS_PROJECT_FILE=/etc/qgis/V2.qgs
+    restart: always
+    # The qgis-server service is not exposed to the outside world directly.
+    # It only communicates with the nginx service on the internal Docker network.
+
+  nginx:
+    image: nginx:latest
+    container_name: nginx-proxy
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf
+      - ./certbot/conf:/etc/letsencrypt
+      - ./certbot/www:/var/www/certbot
+    # The command below periodically tells nginx to reload its config,
+    # which is useful for automatic SSL certificate renewal.
+    command: '/bin/sh -c ''while :; do sleep 6h & wait $${!}; nginx -s reload; done & nginx -g "daemon off;"'''
+    depends_on:
+      - qgis-server
+    restart: always

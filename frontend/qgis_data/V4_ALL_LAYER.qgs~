@@ -1,0 +1,35 @@
+<!DOCTYPE qgis PUBLIC 'http://mrcc.com/qgis.dtd' 'SYSTEM'>
+<qgis version="3.22.0" projectname="">
+  <mapcanvas>
+    <units>degrees</units>
+    <extent>
+      <xmin>-1</xmin>
+      <ymin>-1</ymin>
+      <xmax>1</xmax>
+      <ymax>1</ymax>
+    </extent>
+    <projectionacronym>EPSG:4326</projectionacronym>
+  </mapcanvas>
+  <projectlayers/>
+  <properties>
+    <WMSProjectProperties>
+      <WMSAbstract></WMSAbstract>
+      <WMSAccessConstraints>None</WMSAccessConstraints>
+      <WMSAddWktGeometry>false</WMSAddWktGeometry>
+      <WMSContactMail></WMSContactMail>
+      <WMSContactOrganization></WMSContactOrganization>
+      <WMSContactPerson></WMSContactPerson>
+      <WMSContactPhone></WMSContactPhone>
+      <WMSFees>None</WMSFees>
+      <WMSKeywordList>
+        <value></value>
+      </WMSKeywordList>
+      <WMSMaxAtlasFeatures>0</WMSMaxAtlasFeatures>
+      <WMSOnlineResource></WMSOnlineResource>
+      <WMSOnlineResource href="http://localhost/qgis-server"/>
+      <WMSServiceTitle>Minimal Project</WMSServiceTitle>
+      <WMSServiceType>WMS</WMSServiceType>
+      <WMSUseLayerIDs>false</WMSUseLayerIDs>
+    </WMSProjectProperties>
+  </properties>
+</qgis>
