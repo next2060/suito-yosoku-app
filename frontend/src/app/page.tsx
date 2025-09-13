@@ -36,7 +36,7 @@ const MUNICIPALITY_LAYERS = [
 
 export default function Home() {
   const [selectedLayer, setSelectedLayer] = useState(MUNICIPALITY_LAYERS[22].value); // Default to 筑西市
-  const [geoJsonData, setGeoJsonData] = useState(null);
+  const [geoJsonData, setGeoJsonData] = useState<GeoJsonObject | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
