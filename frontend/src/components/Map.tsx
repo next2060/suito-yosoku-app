@@ -23,7 +23,7 @@ L.Icon.Default.mergeOptions({
 interface MapProps {
   geoJsonData: FeatureCollection | null;
   selectedFeatureId: string | null;
-  onFeatureSelect: (id: string, feature: Feature) => void; // IDとFeature全体を渡す
+  onFeatureSelect: (id: string, feature: Feature) => void;
 }
 
 const Map = ({ geoJsonData, selectedFeatureId, onFeatureSelect }: MapProps) => {
@@ -41,7 +41,17 @@ const Map = ({ geoJsonData, selectedFeatureId, onFeatureSelect }: MapProps) => {
   }, [geoJsonData]);
 
   // 各ポリゴン（圃場）のスタイルを定義
-  const getStyle = (feature: Feature) => {
+  const getStyle = (feature: Feature | undefined) => {
+    // featureが未定義の場合のデフォルトスタイル
+    if (!feature) {
+      return {
+        fillColor: '#0080ff',
+        weight: 2,
+        opacity: 1,
+        color: 'white',
+        fillOpacity: 0.7,
+      };
+    }
     const id = feature.properties?.polygon_uuid || feature.properties?.M_CODE;
     const isSelected = id === selectedFeatureId;
     return {
@@ -59,7 +69,7 @@ const Map = ({ geoJsonData, selectedFeatureId, onFeatureSelect }: MapProps) => {
       click: () => {
         const id = feature.properties?.polygon_uuid || feature.properties?.M_CODE;
         if (id) {
-          onFeatureSelect(id, feature); // 親コンポーネントに選択されたことを通知
+          onFeatureSelect(id, feature);
         }
       },
     });
@@ -78,7 +88,7 @@ const Map = ({ geoJsonData, selectedFeatureId, onFeatureSelect }: MapProps) => {
       />
       {geoJsonData && (
         <GeoJSON
-          key={JSON.stringify(geoJsonData)} // データが変更されたら再描画
+          key={JSON.stringify(geoJsonData)}
           data={geoJsonData}
           style={getStyle}
           onEachFeature={onEachFeature}
