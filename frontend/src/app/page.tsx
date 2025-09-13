@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import dynamic from 'next/dynamic';
+import { GeoJsonObject } from 'geojson';
 
 // Mapコンポーネントをダイナミックインポートし、サーバーサイドレンダリング(SSR)を無効にする
 const Map = dynamic(() => import('@/components/Map'), { 
