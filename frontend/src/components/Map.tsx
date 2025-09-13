@@ -28,7 +28,7 @@ const Map = ({ geoJsonData }: MapProps) => {
   const mapRef = useRef<L.Map | null>(null);
 
   useEffect(() => {
-    if (mapRef.current && geoJsonData && 'features' in geoJsonData && geoJsonData.features.length > 0) {
+    if (mapRef.current && geoJsonData && geoJsonData.type === 'FeatureCollection' && geoJsonData.features.length > 0) {
         const geoJsonLayer = L.geoJSON(geoJsonData);
         const bounds = geoJsonLayer.getBounds();
         if (bounds.isValid()) {
