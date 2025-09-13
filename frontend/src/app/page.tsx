@@ -8,7 +8,8 @@ import { centerOfMass } from '@turf/turf';
 // Mapコンポーネントをダイナミックインポート
 const Map = dynamic(() => import('@/components/Map'), {
   ssr: false,
-  loading: () => <div style={{height: '100%', background: '#f0f0f0', display: 'flex', justifyContent: 'center', alignItems: 'center'}}>地図を読み込み中...</div>
+  // ★変更: Mapコンポーネント自体のローディング表示をシンプルに
+  loading: () => <div className="h-full w-full bg-gray-200 flex items-center justify-center"><p>Map Loading...</p></div>
 });
 
 // --- 型定義 ---
@@ -46,7 +47,7 @@ const VARIETIES = ['あきたこまち', 'コシヒカリ', 'にじのきらめ�
 
 export default function Home() {
   // --- State定義 ---
-  const [selectedLayer, setSelectedLayer] = useState(''); // ★変更: 初期値を空にする
+  const [selectedLayer, setSelectedLayer] = useState('');
   const [geoJsonData, setGeoJsonData] = useState<FeatureCollection | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -61,7 +62,7 @@ export default function Home() {
   // --- 地図データ取得 --- 
   useEffect(() => {
     const fetchLayerData = async () => {
-      if (!selectedLayer) return; // ★変更: 初期値が空なので、最初は実行されない
+      if (!selectedLayer) return;
       setIsLoading(true);
       setError(null);
       setGeoJsonData(null);
@@ -147,7 +148,6 @@ export default function Home() {
             onChange={(e) => setSelectedLayer(e.target.value)} 
             className="w-full p-2 border rounded mt-1 bg-white"
           >
-            {/* ★変更: プレースホルダーを追加 */}
             <option value="" disabled>市町村を選択してください</option>
             {MUNICIPALITY_LAYERS.map(layer => (
               <option key={layer.value} value={layer.value}>{layer.label}</option>
@@ -155,7 +155,7 @@ export default function Home() {
           </select>
         </div>
 
-        {isLoading && <div className="mt-4">地図を読み込み中...</div>}
+        {/* ★変更: サイドバーのエラー表示のみ残す */}
         {error && <div className="mt-4 text-red-600">エラー: {error}</div>}
 
         <hr className="my-4"/>
@@ -197,7 +197,13 @@ export default function Home() {
         </div>
 
       </div>
-      <div className="flex-1">
+      {/* ★変更: 地図エリアをrelativeにし、ローディング表示をオーバーレイする */}
+      <div className="flex-1 relative">
+        {isLoading && (
+            <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center z-20">
+                <div className="text-white text-2xl font-bold animate-pulse">地図データを読み込み中...</div>
+            </div>
+        )}
         <Map 
           geoJsonData={geoJsonData} 
           selectedFeatureId={selectedFeatureId}
