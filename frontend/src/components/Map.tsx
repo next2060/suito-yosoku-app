@@ -4,7 +4,8 @@ import React, { useEffect, useRef } from 'react';
 import { MapContainer, TileLayer, GeoJSON } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import type { GeoJsonObject } from 'geojson';
+// Import the specific type we need
+import type { FeatureCollection } from 'geojson';
 
 // Import image assets directly for webpack processing
 import iconRetinaUrl from 'leaflet/dist/images/marker-icon-2x.png';
@@ -12,7 +13,6 @@ import iconUrl from 'leaflet/dist/images/marker-icon.png';
 import shadowUrl from 'leaflet/dist/images/marker-shadow.png';
 
 // This is a known workaround for a common issue with Leaflet and React/Webpack.
-// It prevents errors during the build process related to icon paths.
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 delete (L.Icon.Default.prototype as any)._getIconUrl;
 
@@ -23,6 +23,7 @@ L.Icon.Default.mergeOptions({
 });
 
 interface MapProps {
+  // Use the specific, correct type for the prop
   geoJsonData: FeatureCollection | null;
 }
 
@@ -56,6 +57,7 @@ const Map = ({ geoJsonData }: MapProps) => {
       {geoJsonData && (
         <GeoJSON
           key={JSON.stringify(geoJsonData)}
+          // The data is guaranteed to be a valid GeoJSON FeatureCollection here
           data={geoJsonData}
           style={() => ({
             fillColor: '#0080ff',
