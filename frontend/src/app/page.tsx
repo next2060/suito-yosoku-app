@@ -11,7 +11,13 @@ const Map = dynamic(() => import('@/components/Map'), {
   loading: () => <div style={{height: '100%', background: '#f0f0f0', display: 'flex', justifyContent: 'center', alignItems: 'center'}}>地図を読み込み中...</div>
 });
 
-// 定数
+// --- 型定義 ---
+interface PredictionResult {
+  heading_date: string;
+  maturity_date: string;
+}
+
+// --- 定数 ---
 const MUNICIPALITY_LAYERS = [
     { value: 'm2025_082015', label: '水戸市' }, { value: 'm2025_082023', label: '日立市' },
     { value: 'm2025_082031', label: '土浦市' }, { value: 'm2025_082040', label: '古河市' },
@@ -36,23 +42,19 @@ const MUNICIPALITY_LAYERS = [
     { value: 'm2025_085219', label: '八千代町' }, { value: 'm2025_085421', label: '五霞町' },
     { value: 'm2025_085464', label: '境町' }, { value: 'm2025_085642', label: '利根町' }
 ];
-
-const VARIETIES = ['あきたこまち', 'コシヒカリ', 'にじのきらめき']; // 仮の品種リスト
+const VARIETIES = ['あきたこまち', 'コシヒカリ', 'にじのきらめき'];
 
 export default function Home() {
   // --- State定義 ---
-  const [selectedLayer, setSelectedLayer] = useState(MUNICIPALITY_LAYERS[22].value); // 市町村選択
-  const [geoJsonData, setGeoJsonData] = useState<FeatureCollection | null>(null); // 地図データ
-  const [isLoading, setIsLoading] = useState(false); // 地図データ読み込み中フラグ
-  const [error, setError] = useState<string | null>(null); // 地図データエラー
-
+  const [selectedLayer, setSelectedLayer] = useState(MUNICIPALITY_LAYERS[22].value);
+  const [geoJsonData, setGeoJsonData] = useState<FeatureCollection | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [selectedFeature, setSelectedFeature] = useState<Feature | null>(null);
   const [selectedFeatureId, setSelectedFeatureId] = useState<string | null>(null);
-
-  // 予測用State
   const [transplantDate, setTransplantDate] = useState('');
   const [variety, setVariety] = useState(VARIETIES[0]);
-  const [predictionResult, setPredictionResult] = useState<any>(null);
+  const [predictionResult, setPredictionResult] = useState<PredictionResult | null>(null);
   const [isPredicting, setIsPredicting] = useState(false);
   const [predictionError, setPredictionError] = useState<string | null>(null);
 
@@ -63,7 +65,7 @@ export default function Home() {
       setIsLoading(true);
       setError(null);
       setGeoJsonData(null);
-      setSelectedFeature(null); // 市町村切り替え時に選択解除
+      setSelectedFeature(null);
       setSelectedFeatureId(null);
 
       const qgisServerUrl = process.env.NEXT_PUBLIC_QGIS_SERVER_URL || 'https://suito-yosoku.com';
@@ -88,7 +90,6 @@ export default function Home() {
   const handleFeatureSelect = (id: string, feature: Feature) => {
     setSelectedFeatureId(id);
     setSelectedFeature(feature);
-    // 選択が変更されたら、過去の予測結果をクリア
     setPredictionResult(null);
     setPredictionError(null);
   };
@@ -105,10 +106,8 @@ export default function Home() {
     setPredictionResult(null);
 
     try {
-      // ポリゴンの重心を計算して緯度経度を取得
       const center = centerOfMass(selectedFeature.geometry);
       const [lon, lat] = center.geometry.coordinates;
-
       const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://suito-yosoku.com/api';
       
       const response = await fetch(`${apiUrl}/predict`, {
@@ -119,18 +118,13 @@ export default function Home() {
           lon,
           transplantDate: transplantDate,
           variety: variety,
-          // 現時点では気象API認証情報はハードコード（将来的には入力欄を設ける）
           weatherUser: process.env.NEXT_PUBLIC_WEATHER_USER,
           weatherPassword: process.env.NEXT_PUBLIC_WEATHER_PASS,
         }),
       });
 
       const result = await response.json();
-
-      if (!response.ok) {
-        throw new Error(result.error || `APIエラー: ${response.status}`);
-      }
-
+      if (!response.ok) throw new Error(result.error || `APIエラー: ${response.status}`);
       setPredictionResult(result);
     } catch (e: unknown) {
       console.error("予測APIの呼び出しに失敗しました:", e);
@@ -164,7 +158,6 @@ export default function Home() {
 
         <hr className="my-4"/>
 
-        {/* --- 予測セクション --- */}
         <div className="flex-grow">
           <h3 className="text-lg font-bold mb-2">生育予測</h3>
           {selectedFeature ? (
