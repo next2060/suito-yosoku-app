@@ -4,28 +4,31 @@ import React, { useEffect, useRef } from 'react';
 import { MapContainer, TileLayer, GeoJSON } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
+import { GeoJsonObject } from 'geojson';
+
+// Import image assets directly for webpack processing
+import iconRetinaUrl from 'leaflet/dist/images/marker-icon-2x.png';
+import iconUrl from 'leaflet/dist/images/marker-icon.png';
+import shadowUrl from 'leaflet/dist/images/marker-shadow.png';
 
 // Leafletのデフォルトアイコンが正しく表示されない問題を修正
-import 'leaflet/dist/images/marker-icon.png';
-import 'leaflet/dist/images/marker-shadow.png';
-
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 delete (L.Icon.Default.prototype as any)._getIconUrl;
 L.Icon.Default.mergeOptions({
-  iconRetinaUrl: require('leaflet/dist/images/marker-icon-2x.png').default,
-  iconUrl: require('leaflet/dist/images/marker-icon.png').default,
-  shadowUrl: require('leaflet/dist/images/marker-shadow.png').default,
+  iconRetinaUrl: iconRetinaUrl.src,
+  iconUrl: iconUrl.src,
+  shadowUrl: shadowUrl.src,
 });
 
 interface MapProps {
-  geoJsonData: any; // TODO: Define a proper GeoJSON type
+  geoJsonData: GeoJsonObject | null;
 }
 
 const Map = ({ geoJsonData }: MapProps) => {
   const mapRef = useRef<L.Map | null>(null);
-  const geoJsonRef = useRef<L.GeoJSON | null>(null);
 
   useEffect(() => {
-    if (mapRef.current && geoJsonData && geoJsonData.features.length > 0) {
+    if (mapRef.current && geoJsonData && 'features' in geoJsonData && geoJsonData.features.length > 0) {
         const geoJsonLayer = L.geoJSON(geoJsonData);
         const bounds = geoJsonLayer.getBounds();
         if (bounds.isValid()) {
@@ -35,9 +38,9 @@ const Map = ({ geoJsonData }: MapProps) => {
   }, [geoJsonData]);
 
   return (
-    <MapContainer 
-      center={[36.34, 140.45]} 
-      zoom={9} 
+    <MapContainer
+      center={[36.34, 140.45]}
+      zoom={9}
       style={{ height: '100%', width: '100%' }}
       whenCreated={map => mapRef.current = map}
     >
@@ -46,7 +49,7 @@ const Map = ({ geoJsonData }: MapProps) => {
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
       />
       {geoJsonData && (
-        <GeoJSON 
+        <GeoJSON
           key={JSON.stringify(geoJsonData)} // Re-render when data changes
           data={geoJsonData}
           style={() => ({

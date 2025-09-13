@@ -70,9 +70,13 @@ export default function Home() {
         } else {
           setGeoJsonData(data);
         }
-      } catch (e: any) {
+      } catch (e: unknown) {
         console.error("レイヤーデータの取得に失敗しました:", e);
-        setError(e.message);
+        if (e instanceof Error) {
+          setError(e.message);
+        } else {
+          setError('An unknown error occurred while fetching layer data.');
+        }
       } finally {
         setIsLoading(false);
       }
