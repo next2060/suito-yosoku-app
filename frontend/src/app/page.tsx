@@ -2,10 +2,10 @@
 
 import React, { useState, useEffect } from 'react';
 import dynamic from 'next/dynamic';
-import { GeoJsonObject } from 'geojson';
+import { FeatureCollection } from 'geojson';
 
 // Mapコンポーネントをダイナミックインポートし、サーバーサイドレンダリング(SSR)を無効にする
-const Map = dynamic(() => import('@/components/Map'), { 
+const Map = dynamic(() => import('@/components/Map'), {
   ssr: false,
   loading: () => <div style={{height: '100%', background: '#f0f0f0', display: 'flex', justifyContent: 'center', alignItems: 'center'}}>地図を読み込み中...</div>
 });
@@ -37,7 +37,7 @@ const MUNICIPALITY_LAYERS = [
 
 export default function Home() {
   const [selectedLayer, setSelectedLayer] = useState(MUNICIPALITY_LAYERS[22].value); // Default to 筑西市
-  const [geoJsonData, setGeoJsonData] = useState<GeoJsonObject | null>(null);
+  const [geoJsonData, setGeoJsonData] = useState<FeatureCollection | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -107,17 +107,5 @@ export default function Home() {
         <Map geoJsonData={geoJsonData} />
       </div>
     </main>
-  );
-}
-   {error && <div className="mt-4 text-red-500">エラー: {error}</div>}
-
-      </div>
-      <div className="flex-1">
-        <Map geoJsonData={geoJsonData} />
-      </div>
-    </main>
-  );
-}
-</main>
   );
 }
