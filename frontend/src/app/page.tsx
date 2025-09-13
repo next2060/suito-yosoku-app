@@ -67,7 +67,7 @@ export default function Home() {
         const data = await response.json();
         if (!data.features) {
           // No features is not an error, just means the layer is empty
-          setGeoJsonData({ type: 'FeatureCollection', features: [] });
+          setGeoJsonData(() => ({ type: 'FeatureCollection', features: [] }));
         } else {
           setGeoJsonData(data);
         }
