@@ -2,14 +2,16 @@
 
 import React, { useState, useEffect } from 'react';
 import dynamic from 'next/dynamic';
-import { FeatureCollection } from 'geojson';
+import { FeatureCollection, Feature } from 'geojson';
+import { centerOfMass } from '@turf/turf';
 
-// Mapコンポーネントをダイナミックインポートし、サーバーサイドレンダリング(SSR)を無効にする
+// Mapコンポーネントをダイナミックインポート
 const Map = dynamic(() => import('@/components/Map'), {
   ssr: false,
   loading: () => <div style={{height: '100%', background: '#f0f0f0', display: 'flex', justifyContent: 'center', alignItems: 'center'}}>地図を読み込み中...</div>
 });
 
+// 定数
 const MUNICIPALITY_LAYERS = [
     { value: 'm2025_082015', label: '水戸市' }, { value: 'm2025_082023', label: '日立市' },
     { value: 'm2025_082031', label: '土浦市' }, { value: 'm2025_082040', label: '古河市' },
@@ -35,58 +37,116 @@ const MUNICIPALITY_LAYERS = [
     { value: 'm2025_085464', label: '境町' }, { value: 'm2025_085642', label: '利根町' }
 ];
 
-export default function Home() {
-  const [selectedLayer, setSelectedLayer] = useState(MUNICIPALITY_LAYERS[22].value); // Default to 筑西市
-  const [geoJsonData, setGeoJsonData] = useState<FeatureCollection | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+const VARIETIES = ['あきたこまち', 'コシヒカリ', 'にじのきらめき']; // 仮の品種リスト
 
+export default function Home() {
+  // --- State定義 ---
+  const [selectedLayer, setSelectedLayer] = useState(MUNICIPALITY_LAYERS[22].value); // 市町村選択
+  const [geoJsonData, setGeoJsonData] = useState<FeatureCollection | null>(null); // 地図データ
+  const [isLoading, setIsLoading] = useState(false); // 地図データ読み込み中フラグ
+  const [error, setError] = useState<string | null>(null); // 地図データエラー
+
+  const [selectedFeature, setSelectedFeature] = useState<Feature | null>(null);
+  const [selectedFeatureId, setSelectedFeatureId] = useState<string | null>(null);
+
+  // 予測用State
+  const [transplantDate, setTransplantDate] = useState('');
+  const [variety, setVariety] = useState(VARIETIES[0]);
+  const [predictionResult, setPredictionResult] = useState<any>(null);
+  const [isPredicting, setIsPredicting] = useState(false);
+  const [predictionError, setPredictionError] = useState<string | null>(null);
+
+  // --- 地図データ取得 --- 
   useEffect(() => {
     const fetchLayerData = async () => {
       if (!selectedLayer) return;
-
       setIsLoading(true);
       setError(null);
       setGeoJsonData(null);
+      setSelectedFeature(null); // 市町村切り替え時に選択解除
+      setSelectedFeatureId(null);
 
-      // 環境変数からQGISサーバーのURLを取得
-      const qgisServerUrl = process.env.NEXT_PUBLIC_QGIS_SERVER_URL;
-      if (!qgisServerUrl) {
-        setError('QGISサーバーのURLが設定されていません。 (.env.local)');
-        setIsLoading(false);
-        return;
-      }
-
+      const qgisServerUrl = process.env.NEXT_PUBLIC_QGIS_SERVER_URL || 'https://suito-yosoku.com';
       const wfsUrl = `${qgisServerUrl}/ows/?SERVICE=WFS&VERSION=1.1.0&REQUEST=GetFeature&TYPENAME=${selectedLayer}&OUTPUTFORMAT=application/json&SRSNAME=EPSG:4326`;
 
       try {
         const response = await fetch(wfsUrl);
-        if (!response.ok) {
-          throw new Error(`サーバーからの応答エラー: ${response.status}`);
-        }
+        if (!response.ok) throw new Error(`サーバーからの応答エラー: ${response.status}`);
         const data = await response.json() as FeatureCollection;
         setGeoJsonData(data);
       } catch (e: unknown) {
         console.error("レイヤーデータの取得に失敗しました:", e);
-        if (e instanceof Error) {
-          setError(e.message);
-        } else {
-          setError('An unknown error occurred while fetching layer data.');
-        }
+        setError(e instanceof Error ? e.message : '不明なエラーが発生しました');
       } finally {
         setIsLoading(false);
       }
     };
-
     fetchLayerData();
   }, [selectedLayer]);
 
+  // --- 地図クリック処理 ---
+  const handleFeatureSelect = (id: string, feature: Feature) => {
+    setSelectedFeatureId(id);
+    setSelectedFeature(feature);
+    // 選択が変更されたら、過去の予測結果をクリア
+    setPredictionResult(null);
+    setPredictionError(null);
+  };
+
+  // --- 生育予測実行処理 ---
+  const handlePredict = async () => {
+    if (!selectedFeature || !transplantDate || !variety) {
+      setPredictionError('圃場を選択し、移植日と品種を入力してください。');
+      return;
+    }
+
+    setIsPredicting(true);
+    setPredictionError(null);
+    setPredictionResult(null);
+
+    try {
+      // ポリゴンの重心を計算して緯度経度を取得
+      const center = centerOfMass(selectedFeature.geometry);
+      const [lon, lat] = center.geometry.coordinates;
+
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://suito-yosoku.com/api';
+      
+      const response = await fetch(`${apiUrl}/predict`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          lat,
+          lon,
+          transplantDate: transplantDate,
+          variety: variety,
+          // 現時点では気象API認証情報はハードコード（将来的には入力欄を設ける）
+          weatherUser: process.env.NEXT_PUBLIC_WEATHER_USER,
+          weatherPassword: process.env.NEXT_PUBLIC_WEATHER_PASS,
+        }),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || `APIエラー: ${response.status}`);
+      }
+
+      setPredictionResult(result);
+    } catch (e: unknown) {
+      console.error("予測APIの呼び出しに失敗しました:", e);
+      setPredictionError(e instanceof Error ? e.message : '不明なエラーが発生しました');
+    } finally {
+      setIsPredicting(false);
+    }
+  };
+
+  // --- UI描画 ---
   return (
     <main className="flex h-screen">
-      <div className="w-1/4 p-4 overflow-y-auto bg-gray-100">
+      <div className="w-1/4 p-4 overflow-y-auto bg-gray-100 flex flex-col">
         <h2 className="text-xl font-bold mb-4">操作パネル</h2>
         
-        <div>
+        <div className="mb-4">
           <h3 className="font-semibold">市町村選択</h3>
           <select 
             value={selectedLayer} 
@@ -99,12 +159,55 @@ export default function Home() {
           </select>
         </div>
 
-        {isLoading && <div className="mt-4">読み込み中...</div>}
+        {isLoading && <div className="mt-4">地図を読み込み中...</div>}
         {error && <div className="mt-4 text-red-500">エラー: {error}</div>}
+
+        <hr className="my-4"/>
+
+        {/* --- 予測セクション --- */}
+        <div className="flex-grow">
+          <h3 className="text-lg font-bold mb-2">生育予測</h3>
+          {selectedFeature ? (
+            <div>
+              <p className="text-sm mb-2">選択中圃場ID: <span className="font-mono bg-gray-200 px-1 rounded">{selectedFeatureId}</span></p>
+              
+              <div className="mb-2">
+                <label className="block text-sm font-medium">移植日</label>
+                <input type="date" value={transplantDate} onChange={e => setTransplantDate(e.target.value)} className="w-full p-2 border rounded mt-1" />
+              </div>
+
+              <div className="mb-4">
+                <label className="block text-sm font-medium">品種</label>
+                <select value={variety} onChange={e => setVariety(e.target.value)} className="w-full p-2 border rounded mt-1">
+                  {VARIETIES.map(v => <option key={v} value={v}>{v}</option>)}
+                </select>
+              </div>
+
+              <button onClick={handlePredict} disabled={isPredicting} className="w-full bg-blue-500 text-white p-2 rounded hover:bg-blue-600 disabled:bg-gray-400">
+                {isPredicting ? '予測中...' : '予測を実行'}
+              </button>
+
+              {predictionError && <div className="mt-4 text-red-500">エラー: {predictionError}</div>}
+              {predictionResult && (
+                <div className="mt-4 p-2 bg-green-100 border border-green-300 rounded">
+                  <h4 className="font-bold">予測結果</h4>
+                  <p>出穂日: {predictionResult.heading_date}</p>
+                  <p>成熟期: {predictionResult.maturity_date}</p>
+                </div>
+              )}
+            </div>
+          ) : (
+            <p className="text-gray-500">地図上の圃場を選択してください。</p>
+          )}
+        </div>
 
       </div>
       <div className="flex-1">
-        <Map geoJsonData={geoJsonData} />
+        <Map 
+          geoJsonData={geoJsonData} 
+          selectedFeatureId={selectedFeatureId}
+          onFeatureSelect={handleFeatureSelect}
+        />
       </div>
     </main>
   );

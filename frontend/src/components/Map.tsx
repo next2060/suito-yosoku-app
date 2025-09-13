@@ -4,34 +4,33 @@ import React, { useEffect, useRef } from 'react';
 import { MapContainer, TileLayer, GeoJSON } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-// Import the specific type we need
-import type { FeatureCollection } from 'geojson';
+import type { FeatureCollection, Feature } from 'geojson';
 
-// Import image assets directly for webpack processing
+// アイコン画像のインポートと設定
 import iconRetinaUrl from 'leaflet/dist/images/marker-icon-2x.png';
 import iconUrl from 'leaflet/dist/images/marker-icon.png';
 import shadowUrl from 'leaflet/dist/images/marker-shadow.png';
 
-// This is a known workaround for a common issue with Leaflet and React/Webpack.
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 delete (L.Icon.Default.prototype as any)._getIconUrl;
-
 L.Icon.Default.mergeOptions({
   iconRetinaUrl: iconRetinaUrl.src,
   iconUrl: iconUrl.src,
   shadowUrl: shadowUrl.src,
 });
 
+// 親コンポーネントから渡されるPropsの型定義
 interface MapProps {
-  // Use the specific, correct type for the prop
   geoJsonData: FeatureCollection | null;
+  selectedFeatureId: string | null;
+  onFeatureSelect: (id: string, feature: Feature) => void; // IDとFeature全体を渡す
 }
 
-const Map = ({ geoJsonData }: MapProps) => {
+const Map = ({ geoJsonData, selectedFeatureId, onFeatureSelect }: MapProps) => {
   const mapRef = useRef<L.Map | null>(null);
 
+  // 地図の表示範囲をデータに合わせて調整
   useEffect(() => {
-    // The geoJsonData prop is now guaranteed to be a FeatureCollection or null.
     if (mapRef.current && geoJsonData && geoJsonData.features.length > 0) {
       const geoJsonLayer = L.geoJSON(geoJsonData);
       const bounds = geoJsonLayer.getBounds();
@@ -40,6 +39,31 @@ const Map = ({ geoJsonData }: MapProps) => {
       }
     }
   }, [geoJsonData]);
+
+  // 各ポリゴン（圃場）のスタイルを定義
+  const getStyle = (feature: Feature) => {
+    const id = feature.properties?.polygon_uuid || feature.properties?.M_CODE;
+    const isSelected = id === selectedFeatureId;
+    return {
+      fillColor: isSelected ? '#ff7800' : '#0080ff', // 選択されているかで色を変更
+      weight: isSelected ? 3 : 2,
+      opacity: 1,
+      color: 'white',
+      fillOpacity: 0.7,
+    };
+  };
+
+  // 各ポリゴンがクリックされたときの処理
+  const onEachFeature = (feature: Feature, layer: L.Layer) => {
+    layer.on({
+      click: () => {
+        const id = feature.properties?.polygon_uuid || feature.properties?.M_CODE;
+        if (id) {
+          onFeatureSelect(id, feature); // 親コンポーネントに選択されたことを通知
+        }
+      },
+    });
+  };
 
   return (
     <MapContainer
@@ -54,16 +78,10 @@ const Map = ({ geoJsonData }: MapProps) => {
       />
       {geoJsonData && (
         <GeoJSON
-          key={JSON.stringify(geoJsonData)}
-          // The data is guaranteed to be a valid GeoJSON FeatureCollection here
+          key={JSON.stringify(geoJsonData)} // データが変更されたら再描画
           data={geoJsonData}
-          style={() => ({
-            fillColor: '#0080ff',
-            weight: 2,
-            opacity: 1,
-            color: 'white',
-            fillOpacity: 0.7,
-          })}
+          style={getStyle}
+          onEachFeature={onEachFeature}
         />
       )}
     </MapContainer>
