@@ -46,7 +46,7 @@ const Map = ({ geoJsonData }: MapProps) => {
       center={[36.34, 140.45]}
       zoom={9}
       style={{ height: '100%', width: '100%' }}
-      whenCreated={(map) => {
+      whenReady={(map) => {
         mapRef.current = map;
       }}
     >
