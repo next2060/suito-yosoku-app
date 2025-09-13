@@ -46,7 +46,7 @@ const VARIETIES = ['あきたこまち', 'コシヒカリ', 'にじのきらめ�
 
 export default function Home() {
   // --- State定義 ---
-  const [selectedLayer, setSelectedLayer] = useState(MUNICIPALITY_LAYERS[22].value);
+  const [selectedLayer, setSelectedLayer] = useState(''); // ★変更: 初期値を空にする
   const [geoJsonData, setGeoJsonData] = useState<FeatureCollection | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -61,7 +61,7 @@ export default function Home() {
   // --- 地図データ取得 --- 
   useEffect(() => {
     const fetchLayerData = async () => {
-      if (!selectedLayer) return;
+      if (!selectedLayer) return; // ★変更: 初期値が空なので、最初は実行されない
       setIsLoading(true);
       setError(null);
       setGeoJsonData(null);
@@ -147,6 +147,8 @@ export default function Home() {
             onChange={(e) => setSelectedLayer(e.target.value)} 
             className="w-full p-2 border rounded mt-1 bg-white"
           >
+            {/* ★変更: プレースホルダーを追加 */}
+            <option value="" disabled>市町村を選択してください</option>
             {MUNICIPALITY_LAYERS.map(layer => (
               <option key={layer.value} value={layer.value}>{layer.label}</option>
             ))}
