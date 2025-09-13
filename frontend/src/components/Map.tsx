@@ -23,26 +23,19 @@ L.Icon.Default.mergeOptions({
 });
 
 interface MapProps {
-  geoJsonData: GeoJsonObject | null;
+  geoJsonData: FeatureCollection | null;
 }
 
 const Map = ({ geoJsonData }: MapProps) => {
   const mapRef = useRef<L.Map | null>(null);
 
   useEffect(() => {
-    if (!mapRef.current || !geoJsonData) {
-      return;
-    }
-
-    // Type guard to ensure we are dealing with a FeatureCollection.
-    // Other GeoJSON types like a single Feature won't have a 'features' array.
-    if (geoJsonData.type === 'FeatureCollection') {
-      if (geoJsonData.features.length > 0) {
-        const geoJsonLayer = L.geoJSON(geoJsonData);
-        const bounds = geoJsonLayer.getBounds();
-        if (bounds.isValid()) {
-          mapRef.current.fitBounds(bounds);
-        }
+    // The geoJsonData prop is now guaranteed to be a FeatureCollection or null.
+    if (mapRef.current && geoJsonData && geoJsonData.features.length > 0) {
+      const geoJsonLayer = L.geoJSON(geoJsonData);
+      const bounds = geoJsonLayer.getBounds();
+      if (bounds.isValid()) {
+        mapRef.current.fitBounds(bounds);
       }
     }
   }, [geoJsonData]);

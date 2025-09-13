@@ -64,13 +64,8 @@ export default function Home() {
         if (!response.ok) {
           throw new Error(`サーバーからの応答エラー: ${response.status}`);
         }
-        const data = await response.json();
-        if (!data.features) {
-          // No features is not an error, just means the layer is empty
-          setGeoJsonData(() => ({ type: 'FeatureCollection', features: [] }));
-        } else {
-          setGeoJsonData(data);
-        }
+        const data = await response.json() as FeatureCollection;
+        setGeoJsonData(data);
       } catch (e: unknown) {
         console.error("レイヤーデータの取得に失敗しました:", e);
         if (e instanceof Error) {
@@ -112,5 +107,17 @@ export default function Home() {
         <Map geoJsonData={geoJsonData} />
       </div>
     </main>
+  );
+}
+   {error && <div className="mt-4 text-red-500">エラー: {error}</div>}
+
+      </div>
+      <div className="flex-1">
+        <Map geoJsonData={geoJsonData} />
+      </div>
+    </main>
+  );
+}
+</main>
   );
 }
