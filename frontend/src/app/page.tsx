@@ -8,7 +8,6 @@ import { centerOfMass } from '@turf/turf';
 // Mapコンポーネントをダイナミックインポート
 const Map = dynamic(() => import('@/components/Map'), {
   ssr: false,
-  // ★変更: Mapコンポーネント自体のローディング表示をシンプルに
   loading: () => <div className="h-full w-full bg-gray-200 flex items-center justify-center"><p>Map Loading...</p></div>
 });
 
@@ -155,7 +154,6 @@ export default function Home() {
           </select>
         </div>
 
-        {/* ★変更: サイドバーのエラー表示のみ残す */}
         {error && <div className="mt-4 text-red-600">エラー: {error}</div>}
 
         <hr className="my-4"/>
@@ -197,10 +195,9 @@ export default function Home() {
         </div>
 
       </div>
-      {/* ★変更: 地図エリアをrelativeにし、ローディング表示をオーバーレイする */}
       <div className="flex-1 relative">
         {isLoading && (
-            <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center z-20">
+            <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[1000]">{/* ★変更: z-indexを大きな値に */}
                 <div className="text-white text-2xl font-bold animate-pulse">地図データを読み込み中...</div>
             </div>
         )}
